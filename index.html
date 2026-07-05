@@ -1,0 +1,403 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Quiz da Sorte — Vale-Prêmio</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg-deep:#0a0e27;
+    --bg-panel:#131a3d;
+    --gold:#f2c14e;
+    --gold-soft:#f7d878;
+    --electric:#4d6bff;
+    --wrong:#ff5470;
+    --correct:#3ddc97;
+    --text:#eef1ff;
+    --text-dim:#9aa3c9;
+  }
+  *{box-sizing:border-box;margin:0;padding:0;}
+  body{
+    font-family:'Inter',sans-serif;
+    background:
+      radial-gradient(circle at 50% -10%, rgba(242,193,78,0.15), transparent 60%),
+      radial-gradient(circle at 90% 90%, rgba(77,107,255,0.15), transparent 50%),
+      var(--bg-deep);
+    color:var(--text);
+    min-height:100vh;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    padding:24px;
+    overflow-x:hidden;
+  }
+  .rays{
+    position:fixed;
+    top:0;left:50%;
+    width:1600px;height:1600px;
+    transform:translateX(-50%);
+    background:conic-gradient(from 0deg, transparent 0deg, rgba(242,193,78,0.06) 8deg, transparent 16deg, transparent 40deg, rgba(77,107,255,0.05) 48deg, transparent 56deg, transparent 90deg, rgba(242,193,78,0.05) 98deg, transparent 106deg);
+    animation:spin 40s linear infinite;
+    pointer-events:none;
+    z-index:0;
+  }
+  @keyframes spin{to{transform:translateX(-50%) rotate(360deg);}}
+
+  .app{
+    position:relative;
+    z-index:1;
+    width:100%;
+    max-width:960px;
+    display:grid;
+    grid-template-columns:220px 1fr;
+    gap:28px;
+  }
+  @media (max-width:760px){
+    .app{grid-template-columns:1fr; max-width:480px;}
+    .ladder{order:2; flex-direction:row !important; overflow-x:auto; gap:8px !important;}
+    .ladder-item{min-width:110px;}
+  }
+
+  .ladder{
+    display:flex;
+    flex-direction:column-reverse;
+    gap:10px;
+    background:var(--bg-panel);
+    border:1px solid rgba(242,193,78,0.15);
+    border-radius:16px;
+    padding:16px;
+  }
+  .ladder-title{
+    font-family:'Space Grotesk',sans-serif;
+    font-size:12px;
+    letter-spacing:0.08em;
+    text-transform:uppercase;
+    color:var(--text-dim);
+    text-align:center;
+    order:99;
+    margin-bottom:4px;
+  }
+  .ladder-item{
+    font-family:'Space Grotesk',sans-serif;
+    font-weight:700;
+    font-size:14px;
+    padding:10px 12px;
+    border-radius:10px;
+    color:var(--text-dim);
+    background:rgba(255,255,255,0.02);
+    border:1px solid transparent;
+    text-align:right;
+    transition:all .35s ease;
+  }
+  .ladder-item.current{
+    color:var(--bg-deep);
+    background:linear-gradient(135deg,var(--gold-soft),var(--gold));
+    box-shadow:0 0 24px rgba(242,193,78,0.45);
+    transform:scale(1.03);
+  }
+  .ladder-item.done{
+    color:var(--correct);
+    border-color:rgba(61,220,151,0.3);
+  }
+
+  .card{
+    background:var(--bg-panel);
+    border:1px solid rgba(255,255,255,0.06);
+    border-radius:20px;
+    padding:36px;
+    min-height:420px;
+    display:flex;
+    flex-direction:column;
+    box-shadow:0 30px 60px -20px rgba(0,0,0,0.6);
+  }
+  .eyebrow{
+    font-family:'Space Grotesk',sans-serif;
+    font-size:13px;
+    letter-spacing:0.1em;
+    text-transform:uppercase;
+    color:var(--gold);
+    margin-bottom:10px;
+  }
+  h1{
+    font-family:'Space Grotesk',sans-serif;
+    font-size:26px;
+    line-height:1.35;
+    margin-bottom:28px;
+  }
+  .options{
+    display:flex;
+    flex-direction:column;
+    gap:12px;
+    margin-top:auto;
+  }
+  .opt{
+    text-align:left;
+    background:rgba(255,255,255,0.03);
+    border:1px solid rgba(255,255,255,0.1);
+    color:var(--text);
+    font-family:'Inter',sans-serif;
+    font-size:15px;
+    font-weight:500;
+    padding:16px 18px;
+    border-radius:12px;
+    cursor:pointer;
+    transition:all .18s ease;
+    display:flex;
+    gap:12px;
+    align-items:center;
+  }
+  .opt:hover:not(:disabled){
+    border-color:var(--electric);
+    background:rgba(77,107,255,0.08);
+    transform:translateX(4px);
+  }
+  .opt:disabled{cursor:default;}
+  .opt .letter{
+    font-family:'Space Grotesk',sans-serif;
+    font-weight:700;
+    color:var(--gold);
+    min-width:20px;
+  }
+  .opt.correct{
+    background:rgba(61,220,151,0.12);
+    border-color:var(--correct);
+  }
+  .opt.wrong{
+    background:rgba(255,84,112,0.12);
+    border-color:var(--wrong);
+  }
+
+  .start-screen, .end-screen{
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    justify-content:center;
+    text-align:center;
+    gap:18px;
+    height:100%;
+    flex:1;
+  }
+  .trophy{font-size:56px;}
+  .start-screen p, .end-screen p{color:var(--text-dim); font-size:15px; max-width:340px; line-height:1.5;}
+  .btn-primary{
+    font-family:'Space Grotesk',sans-serif;
+    font-weight:700;
+    font-size:15px;
+    background:linear-gradient(135deg,var(--gold-soft),var(--gold));
+    color:var(--bg-deep);
+    border:none;
+    padding:14px 32px;
+    border-radius:100px;
+    cursor:pointer;
+    box-shadow:0 12px 30px -8px rgba(242,193,78,0.5);
+    transition:transform .18s ease;
+  }
+  .btn-primary:hover{transform:translateY(-2px);}
+
+  .prize-final{
+    font-family:'Space Grotesk',sans-serif;
+    font-size:38px;
+    font-weight:700;
+    background:linear-gradient(135deg,var(--gold-soft),var(--gold));
+    -webkit-background-clip:text;
+    background-clip:text;
+    color:transparent;
+  }
+
+  .ig-btn{
+    font-family:'Space Grotesk',sans-serif;
+    font-weight:700;
+    font-size:15px;
+    color:#fff;
+    text-decoration:none;
+    display:inline-flex;
+    align-items:center;
+    gap:10px;
+    padding:14px 28px;
+    border-radius:100px;
+    background:linear-gradient(135deg,#4f5bd5,#962fbf,#d62976,#fa7e1e,#feda75);
+    box-shadow:0 14px 34px -10px rgba(214,41,118,0.55);
+    transition:transform .18s ease;
+  }
+  .ig-btn:hover{transform:translateY(-2px);}
+  .ig-btn svg{width:20px;height:20px;flex-shrink:0;}
+
+  .progress-dots{
+    display:flex; gap:6px; margin-bottom:18px;
+  }
+  .dot{
+    width:26px;height:4px;border-radius:2px;
+    background:rgba(255,255,255,0.12);
+  }
+  .dot.filled{background:var(--gold);}
+
+  .feedback-note{
+    font-size:13px;
+    color:var(--text-dim);
+    margin-top:14px;
+    min-height:18px;
+  }
+</style>
+</head>
+<body>
+<div class="rays"></div>
+
+<div class="app">
+  <div class="ladder" id="ladder">
+    <div class="ladder-title">Prêmios</div>
+  </div>
+
+  <div class="card" id="card"></div>
+</div>
+
+<script>
+const QUESTIONS = [
+  {
+    q: "Qual é o maior planeta do Sistema Solar?",
+    options: ["Terra", "Júpiter", "Saturno", "Marte"],
+    correct: 1,
+    prize: "R$ 1.000"
+  },
+  {
+    q: "Em que ano o homem pisou na Lua pela primeira vez?",
+    options: ["1965", "1969", "1972", "1959"],
+    correct: 1,
+    prize: "R$ 5.000"
+  },
+  {
+    q: "Qual desses elementos NÃO é um metal?",
+    options: ["Ferro", "Oxigênio", "Cobre", "Ouro"],
+    correct: 1,
+    prize: "R$ 20.000"
+  },
+  {
+    q: "Quem pintou a obra 'A Noite Estrelada'?",
+    options: ["Pablo Picasso", "Claude Monet", "Vincent van Gogh", "Salvador Dalí"],
+    correct: 2,
+    prize: "R$ 100.000"
+  },
+  {
+    q: "Qual é o oceano mais profundo do mundo?",
+    options: ["Atlântico", "Índico", "Ártico", "Pacífico"],
+    correct: 3,
+    prize: "R$ 500.000"
+  }
+];
+
+// >>> Troque este link pelo perfil do Instagram para onde o usuário será enviado <<<
+const INSTAGRAM_URL = "https://became-coalition-nottingham-checked.trycloudflare.com";
+
+let current = -1; // -1 = tela inicial
+let answered = false;
+
+const card = document.getElementById('card');
+const ladder = document.getElementById('ladder');
+
+function renderLadder(){
+  ladder.querySelectorAll('.ladder-item').forEach(el => el.remove());
+  QUESTIONS.forEach((item, i) => {
+    const div = document.createElement('div');
+    div.className = 'ladder-item';
+    if (i < current) div.classList.add('done');
+    if (i === current) div.classList.add('current');
+    div.textContent = item.prize;
+    ladder.appendChild(div);
+  });
+}
+
+function renderStart(){
+  current = -1;
+  renderLadder();
+  card.innerHTML = `
+    <div class="start-screen">
+      <div class="trophy">🏆</div>
+      <h1 style="margin-bottom:0;">Quiz da Sorte</h1>
+      <p>5 perguntas, 5 níveis de prêmio. Acerte todas e resgate sua recompensa no final. Pronto pra jogar?</p>
+      <button class="btn-primary" onclick="nextQuestion()">Começar o quiz</button>
+    </div>
+  `;
+}
+
+function renderDots(){
+  let html = '<div class="progress-dots">';
+  for(let i=0;i<QUESTIONS.length;i++){
+    html += `<div class="dot ${i<=current?'filled':''}"></div>`;
+  }
+  html += '</div>';
+  return html;
+}
+
+function nextQuestion(){
+  current++;
+  answered = false;
+  renderLadder();
+
+  if (current >= QUESTIONS.length){
+    renderEnd();
+    return;
+  }
+
+  const item = QUESTIONS[current];
+  card.innerHTML = `
+    ${renderDots()}
+    <div class="eyebrow">Pergunta ${current+1} de ${QUESTIONS.length} · Valendo ${item.prize}</div>
+    <h1>${item.q}</h1>
+    <div class="options" id="options">
+      ${item.options.map((opt,i)=>`
+        <button class="opt" data-i="${i}" onclick="selectOption(${i})">
+          <span class="letter">${String.fromCharCode(65+i)}</span> ${opt}
+        </button>
+      `).join('')}
+    </div>
+    <div class="feedback-note" id="feedback"></div>
+  `;
+}
+
+function selectOption(i){
+  if (answered) return;
+  answered = true;
+  const item = QUESTIONS[current];
+  const buttons = document.querySelectorAll('#options .opt');
+  buttons.forEach(b => b.disabled = true);
+
+  const feedback = document.getElementById('feedback');
+
+  if (i === item.correct){
+    buttons[i].classList.add('correct');
+    feedback.textContent = "Isso! Resposta certa. Avançando de nível...";
+    feedback.style.color = 'var(--correct)';
+    setTimeout(nextQuestion, 1100);
+  } else {
+    buttons[i].classList.add('wrong');
+    buttons[item.correct].classList.add('correct');
+    feedback.textContent = "Não foi essa. Mas o jogo continua — bora pra próxima!";
+    feedback.style.color = 'var(--wrong)';
+    setTimeout(nextQuestion, 1400);
+  }
+}
+
+function renderEnd(){
+  card.innerHTML = `
+    <div class="end-screen">
+      <div class="trophy">🎉</div>
+      <h1 style="margin-bottom:0;">Você chegou ao fim!</h1>
+      <div class="prize-final">${QUESTIONS[QUESTIONS.length-1].prize}</div>
+      <p>Clique no botão abaixo para resgatar seu prêmio. Você será direcionado ao nosso Instagram.</p>
+      <a class="ig-btn" href="${INSTAGRAM_URL}" target="_blank" rel="noopener" onclick="setTimeout(()=>{window.location.href='${INSTAGRAM_URL}';}, 150);">
+        <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <rect x="2" y="2" width="20" height="20" rx="6" stroke="white" stroke-width="1.8"/>
+          <circle cx="12" cy="12" r="4.2" stroke="white" stroke-width="1.8"/>
+          <circle cx="17.2" cy="6.8" r="1.1" fill="white"/>
+        </svg>
+        Resgatar no Instagram
+      </a>
+    </div>
+  `;
+}
+
+renderStart();
+</script>
+</body>
+</html>
